@@ -96,6 +96,7 @@ void initReserved(TokenType * reservedWords)
         //printf("symbol: %s  token: %d\n",reservedWords[i].symbol,reservedWords[i].token);
 }
 
+// if word is a reserved word, return token number, else return -1
 int findReservedToken(char *word, TokenType *reservedWords)
 {
   for (int i = 0; i < RESERVED_WORDS_COUNT; i++)
@@ -107,6 +108,7 @@ int findReservedToken(char *word, TokenType *reservedWords)
   return -1;
 }
 
+// if symbol is valid return 1, else return 0
 int checkSymbol(TokenType * symbols, char *str)
 {
     for (int i = 0; i < SYMBOL_COUNT; i++)
@@ -118,6 +120,7 @@ int checkSymbol(TokenType * symbols, char *str)
     return 0;
 }
 
+// if word is a valid reserved word, return 1, else return 0;
 int checkIfReservedWord(char *word, TokenType *reservedWords)
 {
   for (int i = 0; i < RESERVED_WORDS_COUNT; i++)
@@ -129,21 +132,79 @@ int checkIfReservedWord(char *word, TokenType *reservedWords)
   return 0;
 }
 
+// finds if token number is a single or double digit number
+int find_token_digits(int token)
+{
+  if (token / 10 == 0)
+    return 1;
+  else return 2;
+}
+
+// places token in list
+void place_token_in_list(char *token_list, int token, int *token_position, char *temp_buffer)
+{
+  int token_digits = find_token_digits(token);
+  char nums[10]= "0123456789";
+  char c;
+  int first_digit, second_digit;
+
+  first_digit = token % 10;
+
+  if (token_digits == 2)
+    second_digit = (token /10) % 10;
+
+  if (token_digits == 1)
+  {
+  token_list[token_position[0]] = nums[0+first_digit];
+  token_position[0]++;
+  }
+
+  else if (token_digits == 2)
+  {
+    token_list[token_position[0]] = nums[0+second_digit];
+    token_position[0]++;
+    token_list[token_position[0]] = nums[0+first_digit];
+    token_position[0]++;
+  }
+
+  token_list[token_position[0]] = ' ';
+  token_position[0]++;
+
+  // for inserting identifiers
+  if (temp_buffer != NULL)
+  {
+    for (int i = 0; i < strlen(temp_buffer); i++)
+    {
+      token_list[token_position[0]] = temp_buffer[i];
+      token_position[0]++;
+    }
+
+    token_list[token_position[0]] = ' ';
+    token_position[0]++;
+  }
+
+
+  return;
+}
+
 int main(int argc, char **argv)
 {
     TokenType * symbols = (malloc(sizeof(TokenType) * SYMBOL_COUNT));
     TokenType * reservedWords = (malloc(sizeof(TokenType) * RESERVED_WORDS_COUNT));
     FILE * file_ptr = fopen("testertest.txt", "r");
     char buffer [500];
+    char token_list[500];
     int count = 0;
+    int token_position[1];
 
+    token_position[0] = 0;
     initSymbols(symbols);
     initReserved(reservedWords);
 
-
+  // read in file into buffer array
    while (1)
    {
-     char c = fgetc(file_ptr) ; // reading the file
+     char c = fgetc(file_ptr) ;
      if ( c == EOF )
       break ;
 
@@ -155,8 +216,10 @@ int main(int argc, char **argv)
    int pos = 0;
    int category = 0;
 
+   // Continue iterating through array until null value is encountered
    while (pos != count)
    {
+     // if first character of unit is alphabetic
      if (isalpha(buffer[pos]))
      {
        category = 1;
@@ -170,6 +233,7 @@ int main(int argc, char **argv)
 
      switch(category)
      {
+       // first character of unit is a letter
        case 1:
        {
          char temp_buffer[12];
@@ -183,17 +247,16 @@ int main(int argc, char **argv)
 
          while (1)
          {
-
+           // current word is valid length and next character is digit or alpha
            if (temp_pos < 11 && (isdigit(buffer[pos]) ||  isalpha(buffer[pos])))
            {
              temp_buffer[temp_pos] = buffer[pos];
              pos++;
              temp_pos++;
            }
+           // current word is of invalid length
            else if (temp_pos >= 11 && (isalpha(buffer[pos]) || isdigit(buffer[pos])))
            {
-
-
              pos++;
 
              if (print_message == 0)
@@ -207,16 +270,22 @@ int main(int argc, char **argv)
            {
              break;
            }
+           // a character is encountered which marks the end of the unit
            else if (!isalpha(buffer[pos]) && !isdigit(buffer[pos]) &&  more_than_11 == 0)
            {
+
              temp_buffer[temp_pos] = '\0';
              if (checkIfReservedWord(temp_buffer,reservedWords))
              {
-               printf("%s     %d\n", temp_buffer, findReservedToken(temp_buffer, reservedWords));
+               int token = findReservedToken(temp_buffer, reservedWords);
+               place_token_in_list(token_list, token, token_position, NULL);
+
+               printf("%s     %d\n", temp_buffer, token );
                break;
              }
              else
              {
+               place_token_in_list(token_list, IDENTIFIER_TOKEN, token_position,temp_buffer);
                printf("%s       %d\n", temp_buffer, IDENTIFIER_TOKEN);
                break;
              }
@@ -225,5 +294,11 @@ int main(int argc, char **argv)
        }
      }
    }
+
+  printf("Token List:\n");
+  token_list[token_position[0]-1] = '\0';
+  printf("%s", token_list);
+
+
   return 0;
 }
