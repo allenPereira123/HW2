@@ -161,6 +161,10 @@ int main(int argc, char **argv)
      {
        category = 1;
      }
+     else if (isdigit(buffer[pos]))
+     {
+       category = 2;
+     }
      else
      {
        pos++;
@@ -222,6 +226,58 @@ int main(int argc, char **argv)
              }
            }
          }
+         break;
+       }
+
+       case 2 :
+       {
+         char temp_buffer [6];
+         int temp_pos = 0;
+         int length = 0, length_error = 0, alpha_error = 0;
+
+         temp_buffer[temp_pos] = buffer[pos];
+         pos++;
+         temp_pos++;
+         length++;
+
+         while (1)
+         {
+          // breaks out of loop when a non numeric character is scanned
+          if (!isalpha(buffer[pos]) && !isdigit(buffer[pos]))
+          {
+            break;
+          }
+          /* if the length of the temp_buffer is already 5 and we are here in the loop,
+             it means that we are going to read in a 6th char which means it will encounter length error
+          */
+          else if (length == 5 && !length_error && !alpha_error)
+          {
+            length_error = 1;
+            printf("Error : Numbers cannot exceed 5 digits\n");
+          }
+          // non digit error occurs if a supposed number contains a alphabetic character
+          else if (isalpha(buffer[pos]) && !alpha_error && !length_error)
+          {
+            alpha_error = 1;
+            printf("Error : Identifiers cannot begin with a digit\n");
+          }
+
+          // no error has occured, therefore copy into temp buffer
+          if (!length_error && !alpha_error)
+            temp_buffer[temp_pos] = buffer[temp_pos];
+
+          temp_pos++;
+          pos++;
+          length++;
+         }
+
+          temp_buffer[temp_pos] = '\0';
+
+          if (length_error || alpha_error)
+            ;
+          else
+            printf("%d %s\n",NUMBER_TOKEN,temp_buffer);
+
        }
      }
    }
