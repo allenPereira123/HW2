@@ -107,6 +107,17 @@ int findReservedToken(char *word, TokenType *reservedWords)
   return -1;
 }
 
+int findSymbolToken(char *s, TokenType *symbols)
+{
+  for (int i = 0; i < SYMBOL_COUNT; i++)
+  {
+      if (strcmp(symbols[i].symbol,s) == 0)
+          return symbols[i].token;
+  }
+
+  return -1;
+}
+
 int checkSymbol(TokenType * symbols, char *str)
 {
     for (int i = 0; i < SYMBOL_COUNT; i++)
@@ -165,12 +176,15 @@ int main(int argc, char **argv)
      {
        category = 2;
      }
-     else
+     else if (iscntrl(buffer[pos]) != 0 || isspace(buffer[pos]) != 0)
      {
        pos++;
        continue;
      }
-
+     else
+     {
+        category = 3;
+     }
 
      switch(category)
      {
@@ -264,7 +278,7 @@ int main(int argc, char **argv)
 
           // no error has occured, therefore copy into temp buffer
           if (!length_error && !alpha_error)
-            temp_buffer[temp_pos] = buffer[temp_pos];
+            temp_buffer[temp_pos] = buffer[pos];
 
           temp_pos++;
           pos++;
@@ -278,8 +292,100 @@ int main(int argc, char **argv)
           else
             printf("%d %s\n",NUMBER_TOKEN,temp_buffer);
 
+          break;
        }
+
+       case 3 :
+       {
+         char temp_buffer [3];
+         int issue_detected = 0;
+         int comment_detected = 0;
+
+         if (buffer[pos] == '<')
+         {
+          if (buffer[pos + 1] == '>')
+          {
+            strcpy(temp_buffer,"<>");
+            pos += 2;
+          }
+          else if (buffer[pos + 1] == '=')
+          {
+            pos += 2;
+            strcpy(temp_buffer,"<=");
+          }
+          else
+          {
+            strcpy(temp_buffer,"<");
+            pos++;
+          }
+         }
+        else if (buffer[pos] == '/')
+        {
+           if (buffer[pos + 1] != '*')
+           {
+             strcpy(temp_buffer,"/");
+             pos++;
+           }
+           else
+           {
+             pos += 2;
+             comment_detected = 1;
+             while (1)
+             {
+              if (buffer[pos] == '*' && buffer[pos + 1] == '/')
+              {
+                pos += 2;
+                break;
+              }
+              pos++;
+            }
+          }
+        }
+        else if (buffer[pos] == '>')
+        {
+          if (buffer[pos + 1] != '=')
+          {
+            pos++;
+            strcpy(temp_buffer,">");
+          }
+          else
+          {
+            strcpy(temp_buffer,">=");
+            pos += 2;
+          }
+        }
+        else if (buffer[pos] == ':')
+        {
+          if (buffer[pos + 1] != '=')
+          {
+            issue_detected = 1;
+            pos++;
+          }
+          else
+          {
+            strcpy(temp_buffer,":=");
+            pos += 2;
+          }
+        }
+        else
+        {
+          temp_buffer[0] = buffer[pos];
+          temp_buffer[1] = '\0';
+          pos++;
+
+          if (!checkSymbol(symbols,temp_buffer))
+              issue_detected = 1;
+        }
+
+        if (!issue_detected && !comment_detected )
+            printf("%s %d\n",temp_buffer,findSymbolToken(temp_buffer,symbols));
+        if (issue_detected)
+            printf("Error : Invalid Symbol\n");
+
+
+        break;
      }
-   }
-  return 0;
+    }
+ }
+   return 0;
 }
